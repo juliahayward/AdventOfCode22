@@ -1,8 +1,0 @@
-C:\src\juliahayward\AdventOfCode22\AdventOfCode22\bin\Debug\AdventOfCode22.exe.config
-C:\src\juliahayward\AdventOfCode22\AdventOfCode22\bin\Debug\AdventOfCode22.exe
-C:\src\juliahayward\AdventOfCode22\AdventOfCode22\bin\Debug\AdventOfCode22.pdb
-C:\src\juliahayward\AdventOfCode22\AdventOfCode22\obj\Debug\AdventOfCode22.csproj.AssemblyReference.cache
-C:\src\juliahayward\AdventOfCode22\AdventOfCode22\obj\Debug\AdventOfCode22.csproj.SuggestedBindingRedirects.cache
-C:\src\juliahayward\AdventOfCode22\AdventOfCode22\obj\Debug\AdventOfCode22.csproj.CoreCompileInputs.cache
-C:\src\juliahayward\AdventOfCode22\AdventOfCode22\obj\Debug\AdventOfCode22.exe
-C:\src\juliahayward\AdventOfCode22\AdventOfCode22\obj\Debug\AdventOfCode22.pdb
