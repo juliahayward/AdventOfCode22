@@ -10,12 +10,12 @@ namespace AdventOfCode22
     {
         static void Main(string[] args)
         {
-            DoDay9();
-
+            DoDay9(2);
+            DoDay9(10);
             Console.ReadLine();
         }
 
-        private static void DoDay9()
+        private static void DoDay9(int numberOfKnots)
         {
             var lines = new List<string>();
             using (var reader = new StreamReader(new FileStream("C:\\src\\juliahayward\\AdventOfCode22\\RawData\\9.txt",
@@ -27,46 +27,12 @@ namespace AdventOfCode22
                 }
             }
 
-            Point head = new Point();
-            Point tail = new Point();
-            List<string> tailPositions = new List<string>();
-            tailPositions.Add("0,0");
-
-            foreach (var line in lines)
-            {
-                var parts = line.Split(' ');
-                var direction = parts[0];
-                var distance = int.Parse(parts[1]);
-                for (var i = 0; i < distance; i++)
-                {
-                    switch (direction)
-                    {
-                        case "D":
-                            head.Y--;
-                            break;
-                        case "L":
-                            head.X--;
-                            break;
-                        case "U":
-                            head.Y++;
-                            break;
-                        case "R":
-                            head.X++;
-                            break;
-                    }
-
-                    MoveTail(head, tail);
-
-                    tailPositions.Add(tail.X + "," + tail.Y);
-                }
-            }
-
             // Now do the same with 10 points
-            var points = new Point[10];
-            for (int i = 0; i <= 9; i++) points[i] = new Point();
-            head = points[0];
-            tail = points[9];
-            tailPositions.Clear();
+            var points = new Point[numberOfKnots];
+            for (int i = 0; i <= numberOfKnots-1; i++) points[i] = new Point();
+            Point head = points[0];
+            Point tail = points[numberOfKnots-1];
+            var tailPositions = new List<string>(); ;
             tailPositions.Add("0,0");
 
             foreach (var line in lines)
@@ -92,8 +58,8 @@ namespace AdventOfCode22
                             break;
                     }
 
-                    for (int j=0; j<=8; j++)
-                        MoveTail(points[j], points[j+1]);
+                    for (int j=0; j<=numberOfKnots-2; j++)
+                        MoveSuccessor(points[j], points[j+1]);
 
                     tailPositions.Add(tail.X + "," + tail.Y);
                 }
@@ -102,10 +68,10 @@ namespace AdventOfCode22
             Console.WriteLine(tailPositions.Distinct().Count());
         }
 
-        private static void MoveTail(Point head, Point tail)
+        private static void MoveSuccessor(Point head, Point tail)
         {
             // Move the tail to catch up. In the first part neither coordinate can be more than 2 apart, and only one can be 2 apart as we
-            // can't move the head diagonally. However, in the second, a middle segment can do so
+            // can't move the head diagonally. However, in the second, a middle segment can move diagonally so we need to check those extra cases.
             var displacement = (head.X - tail.X) + "," + (head.Y - tail.Y);
             switch (displacement)
             {
@@ -145,6 +111,7 @@ namespace AdventOfCode22
                     tail.Y--;
                     tail.X++;
                     break;
+                // If the two are adjacent or coincident, don't move
             }
         }
 
