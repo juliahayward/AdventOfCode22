@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace AdventOfCode22
 {
@@ -9,15 +10,15 @@ namespace AdventOfCode22
     {
         static void Main(string[] args)
         {
-            DoDay7();
+            DoDay9();
 
             Console.ReadLine();
         }
 
-        private static void DoDay7()
+        private static void DoDay9()
         {
             var lines = new List<string>();
-            using (var reader = new StreamReader(new FileStream("C:\\src\\juliahayward\\AdventOfCode22\\RawData\\7.txt",
+            using (var reader = new StreamReader(new FileStream("C:\\src\\juliahayward\\AdventOfCode22\\RawData\\9.txt",
                        FileMode.Open)))
             {
                 while (!reader.EndOfStream)
@@ -26,80 +27,131 @@ namespace AdventOfCode22
                 }
             }
 
-            var topDirectory = new Directory() {Name = "/"};
-            var currentDirectory = topDirectory;
+            Point head = new Point();
+            Point tail = new Point();
+            List<string> tailPositions = new List<string>();
+            tailPositions.Add("0,0");
+
             foreach (var line in lines)
             {
-                if (line.StartsWith("$ cd /"))
-                    currentDirectory = topDirectory;
-                else if (line.StartsWith("$ cd .."))
-                    currentDirectory = currentDirectory.Parent;
-                else if (line.StartsWith("$ cd "))
+                var parts = line.Split(' ');
+                var direction = parts[0];
+                var distance = int.Parse(parts[1]);
+                for (var i = 0; i < distance; i++)
                 {
-                    var childName = line.Replace("$ cd ", "").Trim();
-                    currentDirectory = currentDirectory.Children.First(x => x.Name == childName);
-                }
-                else if (line.StartsWith("$ ls"))
-                    // we'll assume anyway that we're listing children
-                    continue;
-                else if (line.StartsWith("dir "))
-                {
-                    var childName = line.Replace("dir ", "").Trim();
-                    var alreadyExists = currentDirectory.Children.Any(x => x.Name == childName);
-                    if (!alreadyExists)
-                        currentDirectory.Children.Add(new Directory() { Name = childName, Parent = currentDirectory });
-                }
-                else
-                {
-                    var parts = line.Split(' ');
-                    var file = new File() {Name = parts[1], Size = long.Parse(parts[0])};
-                    currentDirectory.Files.Add(file);
+                    switch (direction)
+                    {
+                        case "D":
+                            head.Y--;
+                            break;
+                        case "L":
+                            head.X--;
+                            break;
+                        case "U":
+                            head.Y++;
+                            break;
+                        case "R":
+                            head.X++;
+                            break;
+                    }
+
+                    MoveTail(head, tail);
+
+                    tailPositions.Add(tail.X + "," + tail.Y);
                 }
             }
 
-            var dirs = new List<Directory>();
-            FindAllDirectories(dirs, topDirectory);
-            Console.WriteLine(dirs.Where(x => x.Size < 100000).Sum(x => x.Size));
-            
-            var spaceAvailable = 70000000 - topDirectory.Size;
-            var spaceNeededToReclaim = 30000000 - spaceAvailable;
-            Console.WriteLine(dirs.Where(x => x.Size >= spaceNeededToReclaim).OrderBy(x => x.Size).First().Size);
-        }
+            // Now do the same with 10 points
+            var points = new Point[10];
+            for (int i = 0; i <= 9; i++) points[i] = new Point();
+            head = points[0];
+            tail = points[9];
+            tailPositions.Clear();
+            tailPositions.Add("0,0");
 
-        static void FindAllDirectories(List<Directory> list, Directory directory)
-        {
-            list.Add(directory);
-            foreach (var child in directory.Children)
-                FindAllDirectories(list, child);
-        }
-
-        internal class Directory
-        {
-            public string Name { get; set; }
-            public List<Directory> Children = new List<Directory>();
-            public List<File> Files = new List<File>();
-            public Directory Parent { get; set; }
-
-            private long _size = -1;
-
-            public long Size
+            foreach (var line in lines)
             {
-                get
+                var parts = line.Split(' ');
+                var direction = parts[0];
+                var distance = int.Parse(parts[1]);
+                for (var i = 0; i < distance; i++)
                 {
-                    if (_size == -1)
-                        _size = Children.Sum(x => x.Size) + Files.Sum(x => x.Size);
-                    return _size;
+                    switch (direction)
+                    {
+                        case "D":
+                            head.Y--;
+                            break;
+                        case "L":
+                            head.X--;
+                            break;
+                        case "U":
+                            head.Y++;
+                            break;
+                        case "R":
+                            head.X++;
+                            break;
+                    }
+
+                    for (int j=0; j<=8; j++)
+                        MoveTail(points[j], points[j+1]);
+
+                    tailPositions.Add(tail.X + "," + tail.Y);
                 }
             }
 
-            
+            Console.WriteLine(tailPositions.Distinct().Count());
         }
 
-        internal class File
+        private static void MoveTail(Point head, Point tail)
         {
-            public string Name { get; set; }
-            public long Size { get; set; }
+            // Move the tail to catch up. In the first part neither coordinate can be more than 2 apart, and only one can be 2 apart as we
+            // can't move the head diagonally. However, in the second, a middle segment can do so
+            var displacement = (head.X - tail.X) + "," + (head.Y - tail.Y);
+            switch (displacement)
+            {
+                case "2,0":
+                    tail.X++;
+                    break;
+                case "2,1":
+                case "2,2":
+                case "1,2":
+                    tail.Y++;
+                    tail.X++;
+                    break;
+                case "0,2":
+                    tail.Y++;
+                    break;
+                case "-1,2":
+                case "-2,2":
+                case "-2,1":
+                    tail.Y++;
+                    tail.X--;
+                    break;
+                case "-2,0":
+                    tail.X--;
+                    break;
+                case "-2,-1":
+                case "-2,-2":
+                case "-1,-2":
+                    tail.Y--;
+                    tail.X--;
+                    break;
+                case "0,-2":
+                    tail.Y--;
+                    break;
+                case "1,-2":
+                case "2,-2":
+                case "2,-1":
+                    tail.Y--;
+                    tail.X++;
+                    break;
+            }
         }
 
+        private class Point
+        {
+            public int X;
+            public int Y;
+        }
     }
 }
