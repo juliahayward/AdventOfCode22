@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -10,15 +11,14 @@ namespace AdventOfCode22
     {
         static void Main(string[] args)
         {
-            DoDay9(2);
-            DoDay9(10);
-            Console.ReadLine();
+            DoDay10A();
+            DoDay10B();
         }
 
-        private static void DoDay9(int numberOfKnots)
+        private static void DoDay10A()
         {
             var lines = new List<string>();
-            using (var reader = new StreamReader(new FileStream("C:\\src\\juliahayward\\AdventOfCode22\\RawData\\9.txt",
+            using (var reader = new StreamReader(new FileStream("C:\\src\\juliahayward\\AdventOfCode22\\RawData\\11.txt",
                        FileMode.Open)))
             {
                 while (!reader.EndOfStream)
@@ -27,98 +27,202 @@ namespace AdventOfCode22
                 }
             }
 
-            // Now do the same with 10 points
-            var points = new Point[numberOfKnots];
-            for (int i = 0; i <= numberOfKnots-1; i++) points[i] = new Point();
-            Point head = points[0];
-            Point tail = points[numberOfKnots-1];
-            var tailPositions = new List<string>(); ;
-            tailPositions.Add("0,0");
-
+            var monkeys = new List<Monkey>();
+            Monkey currentMonkey = null;
             foreach (var line in lines)
             {
-                var parts = line.Split(' ');
-                var direction = parts[0];
-                var distance = int.Parse(parts[1]);
-                for (var i = 0; i < distance; i++)
+                if (line.StartsWith("Monkey"))
                 {
-                    switch (direction)
+                    int index = int.Parse(line.Replace("Monkey", "").Replace(":", "").Trim());
+                    currentMonkey = new Monkey() {Index = index};
+                    monkeys.Add(currentMonkey);
+                }
+                else if (line.Contains("Starting items"))
+                {
+                    currentMonkey.Items =
+                        line.Replace("Starting items:", "").Trim().Split(',')
+                            .Select(x => long.Parse(x.Trim())).ToList();
+                }
+                else if (line.Contains("Operation"))
+                {
+                    if (line.Contains("old * old"))
+                        currentMonkey.Operation = x => x * x;
+                    else if (line.Contains("old * "))
                     {
-                        case "D":
-                            head.Y--;
-                            break;
-                        case "L":
-                            head.X--;
-                            break;
-                        case "U":
-                            head.Y++;
-                            break;
-                        case "R":
-                            head.X++;
-                            break;
+                        int y = int.Parse(line.Replace("Operation: new = old * ", "").Trim());
+                        currentMonkey.Operation = x => x * y;
                     }
-
-                    for (int j=0; j<=numberOfKnots-2; j++)
-                        MoveSuccessor(points[j], points[j+1]);
-
-                    tailPositions.Add(tail.X + "," + tail.Y);
+                    else if (line.Contains("old + "))
+                    {
+                        int y = int.Parse(line.Replace("Operation: new = old + ", "").Trim());
+                        currentMonkey.Operation = x => x + y;
+                    }
+                }
+                else if (line.Contains("Test"))
+                {
+                    int y = int.Parse(line.Replace("Test: divisible by ", "").Trim());
+                    currentMonkey.Test = x => x % y == 0;
+                }
+                else if (line.Contains("If true"))
+                {
+                    int y = int.Parse(line.Replace("If true: throw to monkey", "").Trim());
+                    currentMonkey.IfTrueThrowToMonkeyIndex = y;
+                }
+                else if (line.Contains("If false"))
+                {
+                    int y = int.Parse(line.Replace("If false: throw to monkey ", "").Trim());
+                    currentMonkey.IfFalseThrowToMonkeyIndex = y;
                 }
             }
 
-            Console.WriteLine(tailPositions.Distinct().Count());
-        }
-
-        private static void MoveSuccessor(Point head, Point tail)
-        {
-            // Move the tail to catch up. In the first part neither coordinate can be more than 2 apart, and only one can be 2 apart as we
-            // can't move the head diagonally. However, in the second, a middle segment can move diagonally so we need to check those extra cases.
-            var displacement = (head.X - tail.X) + "," + (head.Y - tail.Y);
-            switch (displacement)
+            for (int round = 1; round <= 20; round++)
             {
-                case "2,0":
-                    tail.X++;
-                    break;
-                case "2,1":
-                case "2,2":
-                case "1,2":
-                    tail.Y++;
-                    tail.X++;
-                    break;
-                case "0,2":
-                    tail.Y++;
-                    break;
-                case "-1,2":
-                case "-2,2":
-                case "-2,1":
-                    tail.Y++;
-                    tail.X--;
-                    break;
-                case "-2,0":
-                    tail.X--;
-                    break;
-                case "-2,-1":
-                case "-2,-2":
-                case "-1,-2":
-                    tail.Y--;
-                    tail.X--;
-                    break;
-                case "0,-2":
-                    tail.Y--;
-                    break;
-                case "1,-2":
-                case "2,-2":
-                case "2,-1":
-                    tail.Y--;
-                    tail.X++;
-                    break;
-                // If the two are adjacent or coincident, don't move
+                foreach (var monkey in monkeys)
+                {
+                    while (monkey.Items.Any())
+                    {
+                        var item = monkey.Items.First();
+                        // Worry goes up when monkey picks up item
+                        var pickedUp = monkey.Operation(item);
+                        // And back down when they grow bored of it.
+                        var boredAgain = pickedUp / 3;
+                        monkey.TotalActivity++;
+                        monkey.Items.RemoveAt(0);
+                        if (monkey.Test(boredAgain))
+                            monkeys[monkey.IfTrueThrowToMonkeyIndex].Items.Add(boredAgain);
+                        else
+                            monkeys[monkey.IfFalseThrowToMonkeyIndex].Items.Add(boredAgain);
+
+                    }
+                }
             }
+
+            var sortedMonkeys = monkeys.OrderByDescending(m => m.TotalActivity);
+            long answer1 = sortedMonkeys.First().TotalActivity * sortedMonkeys.Skip(1).First().TotalActivity;
+            Console.WriteLine(answer1);
         }
 
-        private class Point
+        private static void DoDay10B()
         {
-            public int X;
-            public int Y;
+            var lines = new List<string>();
+            using (var reader = new StreamReader(new FileStream("C:\\src\\juliahayward\\AdventOfCode22\\RawData\\11.txt",
+                       FileMode.Open)))
+            {
+                while (!reader.EndOfStream)
+                {
+                    lines.Add(reader.ReadLine());
+                }
+            }
+
+            var monkeys = new List<Monkey>();
+            Monkey currentMonkey = null;
+            int monkeyDivisorLCM = 1;
+
+            foreach (var line in lines)
+            {
+                if (line.StartsWith("Monkey"))
+                {
+                    int index = int.Parse(line.Replace("Monkey", "").Replace(":", "").Trim());
+                    currentMonkey = new Monkey() { Index = index };
+                    monkeys.Add(currentMonkey);
+                }
+                else if (line.Contains("Starting items"))
+                {
+                    currentMonkey.Items =
+                        line.Replace("Starting items:", "").Trim().Split(',')
+                            .Select(x => long.Parse(x.Trim())).ToList();
+                }
+                else if (line.Contains("Operation"))
+                {
+                    if (line.Contains("old * old"))
+                        currentMonkey.Operation = x => x * x;
+                    else if (line.Contains("old * "))
+                    {
+                        int y = int.Parse(line.Replace("Operation: new = old * ", "").Trim());
+                        currentMonkey.Operation = x => x * y;
+                    }
+                    else if (line.Contains("old + "))
+                    {
+                        int y = int.Parse(line.Replace("Operation: new = old + ", "").Trim());
+                        currentMonkey.Operation = x => x + y;
+                    }
+                }
+                else if (line.Contains("Test"))
+                {
+                    int y = int.Parse(line.Replace("Test: divisible by ", "").Trim());
+                    currentMonkey.Test = x => x % y == 0;
+                    monkeyDivisorLCM = LCM(monkeyDivisorLCM, y);
+                }
+                else if (line.Contains("If true"))
+                {
+                    int y = int.Parse(line.Replace("If true: throw to monkey", "").Trim());
+                    currentMonkey.IfTrueThrowToMonkeyIndex = y;
+                }
+                else if (line.Contains("If false"))
+                {
+                    int y = int.Parse(line.Replace("If false: throw to monkey ", "").Trim());
+                    currentMonkey.IfFalseThrowToMonkeyIndex = y;
+                }
+            }
+
+            for (int round = 1; round <= 10000; round++)
+            {
+                foreach (var monkey in monkeys)
+                {
+                    while (monkey.Items.Any())
+                    {
+                        var item = monkey.Items.First();
+                        // Worry goes up when monkey picks up item
+                        var pickedUp = monkey.Operation(item);
+                        // NOTE - since all monkeys test by division mod N, the behaviour of an item is invariant up to mod LCM(divisors)
+                        pickedUp = pickedUp % monkeyDivisorLCM;
+                        monkey.TotalActivity++;
+                        monkey.Items.RemoveAt(0);
+                        if (monkey.Test(pickedUp))
+                            monkeys[monkey.IfTrueThrowToMonkeyIndex].Items.Add(pickedUp);
+                        else
+                            monkeys[monkey.IfFalseThrowToMonkeyIndex].Items.Add(pickedUp);
+
+                    }
+                }
+            }
+
+            var sortedMonkeys = monkeys.OrderByDescending(m => m.TotalActivity);
+            long answer1 = sortedMonkeys.First().TotalActivity * sortedMonkeys.Skip(1).First().TotalActivity;
+            Console.WriteLine(answer1);
         }
+        internal class Monkey
+        {
+            public int Index;
+
+            public long TotalActivity;
+
+            public List<long> Items = new List<long>();
+
+            public Func<long, long> Operation;
+
+            public Func<long, bool> Test;
+
+            public int IfTrueThrowToMonkeyIndex;
+
+            public int IfFalseThrowToMonkeyIndex;
+        }
+
+        static int GCF(int a, int b)
+        {
+            while (b != 0)
+            {
+                int temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        static int LCM(int a, int b)
+        {
+            return (a / GCF(a, b)) * b;
+        }
+
     }
 }
