@@ -11,14 +11,13 @@ namespace AdventOfCode22
     {
         static void Main(string[] args)
         {
-            DoDay10A();
-            DoDay10B();
+            DoDay12();
         }
 
-        private static void DoDay10A()
+        private static void DoDay12()
         {
             var lines = new List<string>();
-            using (var reader = new StreamReader(new FileStream("C:\\src\\juliahayward\\AdventOfCode22\\RawData\\11.txt",
+            using (var reader = new StreamReader(new FileStream("C:\\src\\juliahayward\\AdventOfCode22\\RawData\\12.txt",
                        FileMode.Open)))
             {
                 while (!reader.EndOfStream)
@@ -26,202 +25,62 @@ namespace AdventOfCode22
                     lines.Add(reader.ReadLine());
                 }
             }
-
-            var monkeys = new List<Monkey>();
-            Monkey currentMonkey = null;
-            foreach (var line in lines)
+            int width = lines[0].Length;
+            int height = lines.Count;
+            var cells = new List<Cell>();
+            for (int row = 0; row < height; row++)
+                for (int col = 0; col < width; col++)
             {
-                if (line.StartsWith("Monkey"))
-                {
-                    int index = int.Parse(line.Replace("Monkey", "").Replace(":", "").Trim());
-                    currentMonkey = new Monkey() {Index = index};
-                    monkeys.Add(currentMonkey);
-                }
-                else if (line.Contains("Starting items"))
-                {
-                    currentMonkey.Items =
-                        line.Replace("Starting items:", "").Trim().Split(',')
-                            .Select(x => long.Parse(x.Trim())).ToList();
-                }
-                else if (line.Contains("Operation"))
-                {
-                    if (line.Contains("old * old"))
-                        currentMonkey.Operation = x => x * x;
-                    else if (line.Contains("old * "))
-                    {
-                        int y = int.Parse(line.Replace("Operation: new = old * ", "").Trim());
-                        currentMonkey.Operation = x => x * y;
-                    }
-                    else if (line.Contains("old + "))
-                    {
-                        int y = int.Parse(line.Replace("Operation: new = old + ", "").Trim());
-                        currentMonkey.Operation = x => x + y;
-                    }
-                }
-                else if (line.Contains("Test"))
-                {
-                    int y = int.Parse(line.Replace("Test: divisible by ", "").Trim());
-                    currentMonkey.Test = x => x % y == 0;
-                }
-                else if (line.Contains("If true"))
-                {
-                    int y = int.Parse(line.Replace("If true: throw to monkey", "").Trim());
-                    currentMonkey.IfTrueThrowToMonkeyIndex = y;
-                }
-                else if (line.Contains("If false"))
-                {
-                    int y = int.Parse(line.Replace("If false: throw to monkey ", "").Trim());
-                    currentMonkey.IfFalseThrowToMonkeyIndex = y;
-                }
+                cells.Add(new Cell() { Height = lines[row][col], Visited = false, DistanceFromStart = int.MaxValue,
+                X = col, Y = row});
             }
 
-            for (int round = 1; round <= 20; round++)
-            {
-                foreach (var monkey in monkeys)
-                {
-                    while (monkey.Items.Any())
-                    {
-                        var item = monkey.Items.First();
-                        // Worry goes up when monkey picks up item
-                        var pickedUp = monkey.Operation(item);
-                        // And back down when they grow bored of it.
-                        var boredAgain = pickedUp / 3;
-                        monkey.TotalActivity++;
-                        monkey.Items.RemoveAt(0);
-                        if (monkey.Test(boredAgain))
-                            monkeys[monkey.IfTrueThrowToMonkeyIndex].Items.Add(boredAgain);
-                        else
-                            monkeys[monkey.IfFalseThrowToMonkeyIndex].Items.Add(boredAgain);
+            // To assist in part 2, we'll consider routes in reverse, starting at E and ending at S
 
+            var currentCell = cells.Single(x => x.Height == 'E');
+            currentCell.DistanceFromStart = 0;
+            currentCell.Height = 'z';   // this is its actual height, not the end marker
+
+            var targetCell = cells.Single(x => x.Height == 'S');
+            targetCell.Height = 'a';    // this also 
+
+            while (currentCell != null)
+            {
+                var north = cells.FirstOrDefault(x => x.X == currentCell.X + 1 && x.Y == currentCell.Y);
+                var east = cells.FirstOrDefault(x => x.X == currentCell.X && x.Y == currentCell.Y + 1);
+                var south = cells.FirstOrDefault(x => x.X == currentCell.X - 1 && x.Y == currentCell.Y);
+                var west = cells.FirstOrDefault(x => x.X == currentCell.X && x.Y == currentCell.Y - 1);
+                foreach (var neighbour in new[] {north, east, south, west})
+                {
+                    if (neighbour != null && !neighbour.Visited && currentCell.CanMoveTo(neighbour))
+                    {
+                        neighbour.DistanceFromStart = Math.Min(neighbour.DistanceFromStart, currentCell.DistanceFromStart + 1);
                     }
                 }
+                currentCell.Visited = true;
+                // Careful - if the only remaining ones are max distance away, then they are unreachable
+                currentCell = cells.Where(x => !x.Visited && x.DistanceFromStart < int.MaxValue)
+                    .OrderBy(x => x.DistanceFromStart).FirstOrDefault();
             }
 
-            var sortedMonkeys = monkeys.OrderByDescending(m => m.TotalActivity);
-            long answer1 = sortedMonkeys.First().TotalActivity * sortedMonkeys.Skip(1).First().TotalActivity;
-            Console.WriteLine(answer1);
+            Console.WriteLine(targetCell.DistanceFromStart);
+
+            // Find distances to all potential starts
+            Console.WriteLine(cells.Where(x => x.Height == 'a').Min(x => x.DistanceFromStart));
         }
 
-        private static void DoDay10B()
+        public class Cell
         {
-            var lines = new List<string>();
-            using (var reader = new StreamReader(new FileStream("C:\\src\\juliahayward\\AdventOfCode22\\RawData\\11.txt",
-                       FileMode.Open)))
+            public int X, Y;
+            public char Height;
+            public int DistanceFromStart;
+            public bool Visited;
+
+            public bool CanMoveTo(Cell otherCell)
             {
-                while (!reader.EndOfStream)
-                {
-                    lines.Add(reader.ReadLine());
-                }
+                
+                return (Height - otherCell.Height <= 1);
             }
-
-            var monkeys = new List<Monkey>();
-            Monkey currentMonkey = null;
-            int monkeyDivisorLCM = 1;
-
-            foreach (var line in lines)
-            {
-                if (line.StartsWith("Monkey"))
-                {
-                    int index = int.Parse(line.Replace("Monkey", "").Replace(":", "").Trim());
-                    currentMonkey = new Monkey() { Index = index };
-                    monkeys.Add(currentMonkey);
-                }
-                else if (line.Contains("Starting items"))
-                {
-                    currentMonkey.Items =
-                        line.Replace("Starting items:", "").Trim().Split(',')
-                            .Select(x => long.Parse(x.Trim())).ToList();
-                }
-                else if (line.Contains("Operation"))
-                {
-                    if (line.Contains("old * old"))
-                        currentMonkey.Operation = x => x * x;
-                    else if (line.Contains("old * "))
-                    {
-                        int y = int.Parse(line.Replace("Operation: new = old * ", "").Trim());
-                        currentMonkey.Operation = x => x * y;
-                    }
-                    else if (line.Contains("old + "))
-                    {
-                        int y = int.Parse(line.Replace("Operation: new = old + ", "").Trim());
-                        currentMonkey.Operation = x => x + y;
-                    }
-                }
-                else if (line.Contains("Test"))
-                {
-                    int y = int.Parse(line.Replace("Test: divisible by ", "").Trim());
-                    currentMonkey.Test = x => x % y == 0;
-                    monkeyDivisorLCM = LCM(monkeyDivisorLCM, y);
-                }
-                else if (line.Contains("If true"))
-                {
-                    int y = int.Parse(line.Replace("If true: throw to monkey", "").Trim());
-                    currentMonkey.IfTrueThrowToMonkeyIndex = y;
-                }
-                else if (line.Contains("If false"))
-                {
-                    int y = int.Parse(line.Replace("If false: throw to monkey ", "").Trim());
-                    currentMonkey.IfFalseThrowToMonkeyIndex = y;
-                }
-            }
-
-            for (int round = 1; round <= 10000; round++)
-            {
-                foreach (var monkey in monkeys)
-                {
-                    while (monkey.Items.Any())
-                    {
-                        var item = monkey.Items.First();
-                        // Worry goes up when monkey picks up item
-                        var pickedUp = monkey.Operation(item);
-                        // NOTE - since all monkeys test by division mod N, the behaviour of an item is invariant up to mod LCM(divisors)
-                        pickedUp = pickedUp % monkeyDivisorLCM;
-                        monkey.TotalActivity++;
-                        monkey.Items.RemoveAt(0);
-                        if (monkey.Test(pickedUp))
-                            monkeys[monkey.IfTrueThrowToMonkeyIndex].Items.Add(pickedUp);
-                        else
-                            monkeys[monkey.IfFalseThrowToMonkeyIndex].Items.Add(pickedUp);
-
-                    }
-                }
-            }
-
-            var sortedMonkeys = monkeys.OrderByDescending(m => m.TotalActivity);
-            long answer1 = sortedMonkeys.First().TotalActivity * sortedMonkeys.Skip(1).First().TotalActivity;
-            Console.WriteLine(answer1);
-        }
-        internal class Monkey
-        {
-            public int Index;
-
-            public long TotalActivity;
-
-            public List<long> Items = new List<long>();
-
-            public Func<long, long> Operation;
-
-            public Func<long, bool> Test;
-
-            public int IfTrueThrowToMonkeyIndex;
-
-            public int IfFalseThrowToMonkeyIndex;
-        }
-
-        static int GCF(int a, int b)
-        {
-            while (b != 0)
-            {
-                int temp = b;
-                b = a % b;
-                a = temp;
-            }
-            return a;
-        }
-
-        static int LCM(int a, int b)
-        {
-            return (a / GCF(a, b)) * b;
         }
 
     }
