@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.Remoting;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace AdventOfCode22
 {
@@ -11,13 +14,14 @@ namespace AdventOfCode22
     {
         static void Main(string[] args)
         {
-            DoDay12();
+            DoDay13();
         }
 
-        private static void DoDay12()
+        private static void DoDay13()
         {
             var lines = new List<string>();
-            using (var reader = new StreamReader(new FileStream("C:\\src\\juliahayward\\AdventOfCode22\\RawData\\12.txt",
+            using (var reader = new StreamReader(new FileStream(
+                       "C:\\src\\juliahayward\\AdventOfCode22\\RawData\\13.txt",
                        FileMode.Open)))
             {
                 while (!reader.EndOfStream)
@@ -25,61 +29,94 @@ namespace AdventOfCode22
                     lines.Add(reader.ReadLine());
                 }
             }
-            int width = lines[0].Length;
-            int height = lines.Count;
-            var cells = new List<Cell>();
-            for (int row = 0; row < height; row++)
-                for (int col = 0; col < width; col++)
+
+            var indexesInCorrectOrder = 0;
+            var pairIndex = 1;
+            for (int i = 0; i < lines.Count; i+=3)
             {
-                cells.Add(new Cell() { Height = lines[row][col], Visited = false, DistanceFromStart = int.MaxValue,
-                X = col, Y = row});
+                var left = Parse(lines[i]);
+                var right = Parse(lines[i + 1]);
+
+                indexesInCorrectOrder += (PacketComparison(left, right) == -1) ? pairIndex : 0;
+                pairIndex++;
             }
 
-            // To assist in part 2, we'll consider routes in reverse, starting at E and ending at S
+            Console.WriteLine(indexesInCorrectOrder);
 
-            var currentCell = cells.Single(x => x.Height == 'E');
-            currentCell.DistanceFromStart = 0;
-            currentCell.Height = 'z';   // this is its actual height, not the end marker
-
-            var targetCell = cells.Single(x => x.Height == 'S');
-            targetCell.Height = 'a';    // this also 
-
-            while (currentCell != null)
+            List<JsonNode> allPackets = new List<JsonNode>();
+            // Find all of them and put them in a big list
+            for (int i = 0; i < lines.Count; i++)
             {
-                var north = cells.FirstOrDefault(x => x.X == currentCell.X + 1 && x.Y == currentCell.Y);
-                var east = cells.FirstOrDefault(x => x.X == currentCell.X && x.Y == currentCell.Y + 1);
-                var south = cells.FirstOrDefault(x => x.X == currentCell.X - 1 && x.Y == currentCell.Y);
-                var west = cells.FirstOrDefault(x => x.X == currentCell.X && x.Y == currentCell.Y - 1);
-                foreach (var neighbour in new[] {north, east, south, west})
-                {
-                    if (neighbour != null && !neighbour.Visited && currentCell.CanMoveTo(neighbour))
-                    {
-                        neighbour.DistanceFromStart = Math.Min(neighbour.DistanceFromStart, currentCell.DistanceFromStart + 1);
-                    }
-                }
-                currentCell.Visited = true;
-                // Careful - if the only remaining ones are max distance away, then they are unreachable
-                currentCell = cells.Where(x => !x.Visited && x.DistanceFromStart < int.MaxValue)
-                    .OrderBy(x => x.DistanceFromStart).FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(lines[i])) allPackets.Add(Parse(lines[i]));
             }
 
-            Console.WriteLine(targetCell.DistanceFromStart);
+            var divider1 = new JsonArray();
+            var inner1 = new JsonArray
+            {
+                2
+            };
+            divider1.Add(inner1);
 
-            // Find distances to all potential starts
-            Console.WriteLine(cells.Where(x => x.Height == 'a').Min(x => x.DistanceFromStart));
+            var divider2 = new JsonArray();
+            var inner2 = new JsonArray
+            {
+                6
+            };
+            divider2.Add(inner2);
+
+            allPackets.Add(divider1);
+            allPackets.Add(divider2);
+            allPackets.Sort(PacketComparison);
+
+            var first = allPackets.IndexOf(divider1) + 1;   // Yay for off-by-one
+            var second = allPackets.IndexOf(divider2) + 1;
+
+            Console.WriteLine(first * second);
         }
 
-        public class Cell
+        private static JsonNode Parse(string input)
         {
-            public int X, Y;
-            public char Height;
-            public int DistanceFromStart;
-            public bool Visited;
+            return JsonObject.Parse(input);
+        }
 
-            public bool CanMoveTo(Cell otherCell)
+        private static int PacketComparison(JsonNode left, JsonNode right)
+        {
+            if (left is JsonArray && right is JsonArray)
             {
-                
-                return (Height - otherCell.Height <= 1);
+                var leftArray = left as JsonArray;
+                var rightArray = right as JsonArray;
+                // One of the array items differs
+                for (int i = 0; i < Math.Min(leftArray.Count, rightArray.Count); i++)
+                {
+                    var sublistCheck = PacketComparison(leftArray[i], rightArray[i]);
+                    if (sublistCheck != 0) return sublistCheck;
+                }
+
+                // Array all same, but length different
+                if (leftArray.Count > rightArray.Count) return 1;
+                if (rightArray.Count > leftArray.Count) return -1;
+                // Indeterminate; move on
+                return 0;
+            }
+            else if (left is JsonArray)
+            {
+                var newRightArray = new JsonArray();
+                newRightArray.Add(right.GetValue<int>());
+                return PacketComparison(left, newRightArray);
+            }
+            else if (right is JsonArray)
+            {
+                var newLeftArray = new JsonArray();
+                newLeftArray.Add(left.GetValue<int>());
+                return PacketComparison(newLeftArray, right);
+            }
+            else
+            {
+                var leftInt = left.GetValue<int>();
+                var rightInt = right.GetValue<int>();
+                if (leftInt < rightInt) return -1;
+                if (leftInt > rightInt) return 1;
+                return 0;
             }
         }
 
