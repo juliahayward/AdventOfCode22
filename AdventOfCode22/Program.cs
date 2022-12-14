@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Remoting;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace AdventOfCode22
 {
@@ -14,109 +15,143 @@ namespace AdventOfCode22
     {
         static void Main(string[] args)
         {
-            DoDay13();
+            DoDay14();
         }
 
-        private static void DoDay13()
+        private static void DoDay14()
         {
             var lines = new List<string>();
             using (var reader = new StreamReader(new FileStream(
-                       "C:\\src\\juliahayward\\AdventOfCode22\\RawData\\13.txt",
-                       FileMode.Open)))
+                       "C:\\src\\juliahayward\\AdventOfCode22\\RawData\\14.txt", FileMode.Open)))
             {
                 while (!reader.EndOfStream)
                 {
                     lines.Add(reader.ReadLine());
                 }
             }
-
-            var indexesInCorrectOrder = 0;
-            var pairIndex = 1;
-            for (int i = 0; i < lines.Count; i+=3)
+            // First, find the size of our array
+            int maxy = 0, minx=int.MaxValue, maxx = 0; maxy = lines.Count;
+            foreach (var line in lines)
             {
-                var left = Parse(lines[i]);
-                var right = Parse(lines[i + 1]);
-
-                indexesInCorrectOrder += (PacketComparison(left, right) == -1) ? pairIndex : 0;
-                pairIndex++;
-            }
-
-            Console.WriteLine(indexesInCorrectOrder);
-
-            List<JsonNode> allPackets = new List<JsonNode>();
-            // Find all of them and put them in a big list
-            for (int i = 0; i < lines.Count; i++)
-            {
-                if (!string.IsNullOrWhiteSpace(lines[i])) allPackets.Add(Parse(lines[i]));
-            }
-
-            var divider1 = new JsonArray();
-            var inner1 = new JsonArray
-            {
-                2
-            };
-            divider1.Add(inner1);
-
-            var divider2 = new JsonArray();
-            var inner2 = new JsonArray
-            {
-                6
-            };
-            divider2.Add(inner2);
-
-            allPackets.Add(divider1);
-            allPackets.Add(divider2);
-            allPackets.Sort(PacketComparison);
-
-            var first = allPackets.IndexOf(divider1) + 1;   // Yay for off-by-one
-            var second = allPackets.IndexOf(divider2) + 1;
-
-            Console.WriteLine(first * second);
-        }
-
-        private static JsonNode Parse(string input)
-        {
-            return JsonObject.Parse(input);
-        }
-
-        private static int PacketComparison(JsonNode left, JsonNode right)
-        {
-            if (left is JsonArray && right is JsonArray)
-            {
-                var leftArray = left as JsonArray;
-                var rightArray = right as JsonArray;
-                // One of the array items differs
-                for (int i = 0; i < Math.Min(leftArray.Count, rightArray.Count); i++)
+                var parts = line.Split(new string[] {"->"}, StringSplitOptions.None);
+                foreach (var part in parts)
                 {
-                    var sublistCheck = PacketComparison(leftArray[i], rightArray[i]);
-                    if (sublistCheck != 0) return sublistCheck;
+                    int x = int.Parse(part.Split(',')[0].Trim());
+                    int y = int.Parse(part.Split(',')[1].Trim());
+                    maxy = Math.Max(y, maxy);
+                    maxx = Math.Max(x, maxx);
+                    minx = Math.Min(x, minx);
                 }
+            }
+            // TODO: We could employ a shift here to minimise the size of the array
+            var cave = new char[maxx+maxy, maxy+4];
+            foreach (var line in lines)
+            {
+                var parts = line.Split(new string[] { "->" }, StringSplitOptions.None);
+                for (int i = 0; i < parts.Length - 1; i++)
+                {
+                    int x = int.Parse(parts[i].Split(',')[0].Trim());
+                    int y = int.Parse(parts[i].Split(',')[1].Trim());
+                    int nextx = int.Parse(parts[i+1].Split(',')[0].Trim());
+                    int nexty = int.Parse(parts[i+1].Split(',')[1].Trim());
+                    FillInCaveWithRock(cave, x, y, nextx, nexty);
+                }
+            }
 
-                // Array all same, but length different
-                if (leftArray.Count > rightArray.Count) return 1;
-                if (rightArray.Count > leftArray.Count) return -1;
-                // Indeterminate; move on
-                return 0;
-            }
-            else if (left is JsonArray)
+            // DrawCave(cave, minx, maxx, maxy);
+
+            int numberOfSandThatSettle = 0;
+            bool fallingOffSide = false;
+            while (cave[500,0] != 'o' && !fallingOffSide)
             {
-                var newRightArray = new JsonArray();
-                newRightArray.Add(right.GetValue<int>());
-                return PacketComparison(left, newRightArray);
+                (int, int) sandPosition = (500, 0);
+                bool settled = false;
+                while (!fallingOffSide && !settled)
+                {
+                    if (sandPosition.Item2 > maxy)
+                    {
+                        fallingOffSide = true;
+                    }
+                    else if (cave[sandPosition.Item1, sandPosition.Item2 + 1] == 0)
+                        sandPosition.Item2 += 1;
+                    else if (cave[sandPosition.Item1 - 1, sandPosition.Item2 + 1] == 0)
+                    {
+                        sandPosition.Item1 -= 1;
+                        sandPosition.Item2 += 1;
+                    }
+                    else if (cave[sandPosition.Item1 + 1, sandPosition.Item2 + 1] == 0)
+                    {
+                        sandPosition.Item1 += 1;
+                        sandPosition.Item2 += 1;
+                    }
+                    else
+                    {
+                        settled = true;
+                        cave[sandPosition.Item1, sandPosition.Item2] = 'o';
+                        numberOfSandThatSettle++;
+                    }
+                }
             }
-            else if (right is JsonArray)
+
+            Console.WriteLine(numberOfSandThatSettle);
+
+            // Now add the floor
+            FillInCaveWithRock(cave, minx-5, maxy+2, maxx+5, maxy+2);
+
+            // Similar to the above but nothing falls off the side now
+            // and we're adding to the sand already there
+            while (cave[500, 0] != 'o')
             {
-                var newLeftArray = new JsonArray();
-                newLeftArray.Add(left.GetValue<int>());
-                return PacketComparison(newLeftArray, right);
+                (int, int) sandPosition = (500, 0);
+                bool settled = false;
+                while (!settled)
+                {
+                    if (cave[sandPosition.Item1, sandPosition.Item2 + 1] == 0 && sandPosition.Item2 < maxy + 1)
+                        sandPosition.Item2 += 1;
+                    else if (cave[sandPosition.Item1 - 1, sandPosition.Item2 + 1] == 0 && sandPosition.Item2 < maxy + 1)
+                    {
+                        sandPosition.Item1 -= 1;
+                        sandPosition.Item2 += 1;
+                    }
+                    else if (cave[sandPosition.Item1 + 1, sandPosition.Item2 + 1] == 0 && sandPosition.Item2 < maxy + 1)
+                    {
+                        sandPosition.Item1 += 1;
+                        sandPosition.Item2 += 1;
+                    }
+                    else
+                    {
+                        settled = true;
+                        cave[sandPosition.Item1, sandPosition.Item2] = 'o';
+                        numberOfSandThatSettle++;
+                    }
+                }
+            }
+            Console.WriteLine(numberOfSandThatSettle);
+        }
+
+        private static void FillInCaveWithRock(char[,] cave, int x1, int y1, int x2, int y2)
+        {
+            if (x1 == x2)
+            {
+                for (int y = Math.Min(y1, y2); y <= Math.Max(y1, y2); y++)
+                    cave[x1, y] = '#';
             }
             else
             {
-                var leftInt = left.GetValue<int>();
-                var rightInt = right.GetValue<int>();
-                if (leftInt < rightInt) return -1;
-                if (leftInt > rightInt) return 1;
-                return 0;
+                for (int x = Math.Min(x1, x2); x <= Math.Max(x1, x2); x++)
+                    cave[x, y1] = '#';
+            }
+        }
+
+        private static void DrawCave(char[,] cave, int minx, int maxx, int maxy)
+        {
+            for (int y = 0; y <= maxy; y++)
+            {
+                for (int x = 0; x <= maxx; x++)
+                {
+                    Console.Write(cave[x,y]);
+                }
+                Console.WriteLine("");
             }
         }
 
