@@ -42,8 +42,7 @@ namespace AdventOfCode22
             // Number of excluded spaces, minus any beacons in that range
             Console.WriteLine(sorted.Sum(x => x.Item2 - x.Item1 + 1 - sensors.Where(s => s.BeaconY == yOfInterest && s.BeaconX >= x.Item1 && s.BeaconX <= x.Item2).Select(s => s.BeaconX).Distinct().Count()));
 
-            // Part 2 - just get a solution! This will be sloooooow but I have a meeting to get to
-            // You probably want to do vertical sweeps until you get the right line
+            // Part 2 - brute force fails hugely; reuse part 1
             for (int y = 0; y < 4000000; y++)
             {
                 sorted = GetRanges(y, sensors);
