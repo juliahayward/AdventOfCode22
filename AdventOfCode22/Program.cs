@@ -16,7 +16,8 @@ namespace AdventOfCode22
     {
         static void Main(string[] args)
         {
-            Day15.DoDay15();
+            Day16.DoDay16();
+            Console.ReadLine();
         }
 
         

@@ -21,6 +21,8 @@ namespace AdventOfCode22
                 }
             }
 
+            DateTime start = DateTime.Now;
+
             var sensors = new List<SensorBeaconPair>();
             foreach (var line in lines)
             {
@@ -40,59 +42,63 @@ namespace AdventOfCode22
             var sorted = GetRanges(yOfInterest, sensors);
 
             // Number of excluded spaces, minus any beacons in that range
-            Console.WriteLine(sorted.Sum(x => x.Item2 - x.Item1 + 1 - sensors.Where(s => s.BeaconY == yOfInterest && s.BeaconX >= x.Item1 && s.BeaconX <= x.Item2).Select(s => s.BeaconX).Distinct().Count()));
+            Console.WriteLine(sorted.Sum(x => x.High - x.Low + 1 - sensors.Where(s => s.BeaconY == yOfInterest && s.BeaconX >= x.Low && s.BeaconX <= x.High).Select(s => s.BeaconX).Distinct().Count()));
 
             // Part 2 - brute force fails hugely; reuse part 1
             for (int y = 0; y < 4000000; y++)
             {
                 sorted = GetRanges(y, sensors);
-                if (!sorted.Any(s => s.Item1 <= 0 && s.Item2 >= 4000000))
+                if (!sorted.Any(s => s.Low <= 0 && s.High >= 4000000))
                 {
-                    var lower = sorted.Last(x => x.Item2 <= 4000000).Item2;
-                    var higher = sorted.First(x => x.Item1 > 0).Item1;
+                    var lower = sorted.Last(x => x.High <= 4000000).High;
+                    var higher = sorted.First(x => x.Low > 0).Low;
                     long missingpointx = (higher + lower) / 2;
                     Console.WriteLine(4000000 * missingpointx + y);
+                    // If you write more than one line, the puzzle is borked.
+                    break;
                 }
             }
 
+            DateTime end = DateTime.Now;
+            Console.WriteLine((end - start).TotalSeconds);
         }
 
-        private static List<(int, int)> GetRanges(int yOfInterest, List<SensorBeaconPair> sensors)
+        private static List<Range> GetRanges(int yOfInterest, List<SensorBeaconPair> sensors)
         {
-            List<(int, int)> excludedRangesOnLine = new List<(int, int)>();
+            List<Range> excludedRangesOnLine = new List<Range>();
             foreach (var sensor in sensors)
             {
-                var manhattanDistanceSensorToBeacon = Math.Abs(sensor.SensorX - sensor.BeaconX) + Math.Abs(sensor.SensorY - sensor.BeaconY);
+                var manhattanDistanceSensorToBeacon = sensor.Radius;
                 if (Math.Abs(sensor.SensorY - yOfInterest) > manhattanDistanceSensorToBeacon)
                     continue; // too far away to be relevant
 
                 var excludedRangeLower = sensor.SensorX - (manhattanDistanceSensorToBeacon - Math.Abs(sensor.SensorY - yOfInterest));
                 var excludedRangeHigher = sensor.SensorX + (manhattanDistanceSensorToBeacon - Math.Abs(sensor.SensorY - yOfInterest));
-                excludedRangesOnLine.Add((excludedRangeLower, excludedRangeHigher));
+                excludedRangesOnLine.Add(new Range(excludedRangeLower, excludedRangeHigher));
             }
-            var sorted = excludedRangesOnLine.OrderBy(x => x.Item1).ToList();
+            var sorted = excludedRangesOnLine.OrderBy(x => x.Low).ToList();
             Accumulate(sorted);
             return sorted;
         }
 
-        private static void Accumulate(List<(int, int)> input)
+        private static void Accumulate(List<Range> input, int startIndex = 0)
         {
-            bool workDone = false;
-            for (int i = 0; i < input.Count - 1; i++)
+            int alteredIndex = -1;
+            for (int i = startIndex; i < input.Count - 1; i++)
             {
                 var first = input[i];
                 var second = input[i + 1];
-                if (first.Item2 >= second.Item1)
+                if (first.High >= second.Low)
                 {
                     // just changing first doesn't affect the list :(
-                    input.RemoveAt(i);
-                    input.Insert(i, (first.Item1, Math.Max(first.Item2, second.Item2)));
+                    first.High = Math.Max(first.High, second.High);
                     input.RemoveAt(i + 1);
-                    workDone = true;
+                    alteredIndex = i;
                     break;
                 }
             }
-            if (workDone) Accumulate(input);
+            // Carry on where you left off, don't start again
+            if (alteredIndex >= 0) Accumulate(input, alteredIndex);
         }
 
         private class SensorBeaconPair
@@ -101,6 +107,28 @@ namespace AdventOfCode22
             public int SensorY;
             public int BeaconX;
             public int BeaconY;
+
+            private int _radius = -1;
+            public int Radius
+            {
+                get
+                {
+                    if (_radius == -1) _radius = Math.Abs(SensorX - BeaconX) + Math.Abs(SensorY - BeaconY);
+                    return _radius;
+                }
+            }
+        }
+
+        internal class Range
+        {
+            public Range(int low, int high)
+            {
+                Low = low;
+                High = high;
+            }
+
+            public int Low; 
+            public int High;
         }
     }
 }
