@@ -7,7 +7,7 @@
     <ProjectGuid>{2994149C-7E90-4B5F-83A6-09325E196166}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>AdventOfCode22</RootNamespace>
-    <AssemblyName>AdventOfCode22</AssemblyName>
+    <AssemblyName>AdventOfCode2217</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -18,6 +18,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -79,6 +80,7 @@
     <Compile Include="Day14.cs" />
     <Compile Include="Day15.cs" />
     <Compile Include="Day16.cs" />
+    <Compile Include="Day17.cs" />
     <Compile Include="Day2.cs" />
     <Compile Include="Day3.cs" />
     <Compile Include="Day4.cs" />

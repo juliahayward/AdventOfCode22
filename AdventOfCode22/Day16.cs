@@ -37,22 +37,26 @@ namespace AdventOfCode22
             var initialState = new ValveState() { CurrentValve = "AA" };
             var numberOfWorkingValves = valves.Where(v => v.Value.Rate > 0).Count();
 
-           // ComputeChildren(initialState, valves, numberOfWorkingValves, 30, false);
+            var start = DateTime.Now;
+            ComputeChildren(initialState, valves, numberOfWorkingValves, 30, false);
 
-          //  Console.WriteLine(initialState.BestLeaf.PressureReleased);
+            Console.WriteLine(initialState.BestLeaf.PressureReleased);
+            Console.WriteLine((DateTime.Now - start).TotalSeconds);
 
             // Now do the same with an elephant
+            bestSoFar = 0;
             initialState = new ValveState() { CurrentValve = "AA", CurrentElephantValve = "AA" };
             
             ComputeChildren(initialState, valves, numberOfWorkingValves, 26, true);
             Console.WriteLine(initialState.BestLeaf.PressureReleased);
+            Console.WriteLine((DateTime.Now - start).TotalSeconds);
         }
 
         public static int bestSoFar = 0;
 
         private static void ComputeChildren(ValveState currentState, Dictionary<string, Valve> valves, int numberOfWorkingValves, int totalMinutesAvailable, bool usingElephant)
         {
-            var elephantsMove = (usingElephant && currentState.ActionsTaken.Count % 2 == 1);
+            var elephantsMove = (usingElephant && currentState.ActionsTaken % 2 == 1);
             var currentValve = (elephantsMove ? currentState.CurrentElephantValve : currentState.CurrentValve);
 
             currentState.BestLeaf = currentState;
@@ -60,6 +64,10 @@ namespace AdventOfCode22
             if (currentState.ElapsedTime >= totalMinutesAvailable) return; 
             // Can do no more if all valves are open
             if (currentState.OpenValves.Count == numberOfWorkingValves) return;
+            // Can not beat the best so far even if all remaining valves could open now (hopefully this
+            // cuts off a lot of the tree when early poor moves are made)
+            var maxRemainingPressure = (totalMinutesAvailable- currentState.ElapsedTime - 1) * valves.Values.Where(v => !currentState.OpenValves.Contains(v.Name)).Sum(v => v.Rate);
+            if (maxRemainingPressure + currentState.PressureReleased < bestSoFar) return;
             // One possible child is to open this valve, if not already open, and is openable
             if (!currentState.OpenValves.Contains(currentValve) && valves[currentValve].Rate > 0)
             {
@@ -83,8 +91,7 @@ namespace AdventOfCode22
                 }
                 child.OpenValves.AddRange(currentState.OpenValves);
                 child.OpenValves.Add(currentValve);
-                child.ActionsTaken.AddRange(currentState.ActionsTaken);
-                child.ActionsTaken.Add(new OpenValveAction() { ValveName = currentValve });
+                child.ActionsTaken = currentState.ActionsTaken + 1;
                 currentState.Children.Add(child);
                 ComputeChildren(child, valves, numberOfWorkingValves, totalMinutesAvailable, usingElephant);
             }
@@ -117,8 +124,7 @@ namespace AdventOfCode22
                     child.NodesSinceLastValveOpened.Add(neighbour);
                 };
                 child.OpenValves.AddRange(currentState.OpenValves);
-                child.ActionsTaken.AddRange(currentState.ActionsTaken);
-                child.ActionsTaken.Add(new MoveToValveAction() { FromValveName = currentValve, ToValveName = neighbour });            
+                child.ActionsTaken = currentState.ActionsTaken + 1;         
                 currentState.Children.Add(child);
                 ComputeChildren(child, valves, numberOfWorkingValves, totalMinutesAvailable, usingElephant);
             }
@@ -150,11 +156,11 @@ namespace AdventOfCode22
         {
             public string CurrentValve;
             public string CurrentElephantValve;
-            public int ElapsedTime => ActionsTaken.Count() / ((CurrentElephantValve == null) ? 1 : 2);
+            public int ElapsedTime => ActionsTaken / ((CurrentElephantValve == null) ? 1 : 2);
             public List<string> OpenValves = new List<string>();
             public int PressureReleased = 0;
             public ValveState BestLeaf = null;
-            public List<IAction> ActionsTaken = new List<IAction>();
+            public int ActionsTaken = 0;
             public List<ValveState> Children = new List<ValveState>();
             public List<string> NodesSinceLastValveOpened = new List<string>();
             public List<string> ElephantNodesSinceLastValveOpened = new List<string>();
