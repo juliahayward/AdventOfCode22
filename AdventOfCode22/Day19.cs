@@ -13,7 +13,7 @@ namespace AdventOfCode22
         {
             var lines = new List<string>();
             using (var reader = new StreamReader(new FileStream(
-                       "C:\\src\\juliahayward\\AdventOfCode22\\RawData\\19-example.txt", FileMode.Open)))
+                       "C:\\src\\juliahayward\\AdventOfCode22\\RawData\\19.txt", FileMode.Open)))
             {
                 while (!reader.EndOfStream)
                 {
@@ -46,36 +46,18 @@ namespace AdventOfCode22
                     foreach (var state in initialStates)
                     {
                         var allRobotsPossible = true;
-                        if (state.OreInStock >= blueprint.OreRobotNeedsOre)
+                        if (state.OreInStock >= blueprint.GeodeRobotNeedsOre && state.ObsidianInStock >= blueprint.GeodeRobotNeedsObsidian)
                         {
                             var newState = new State()
                             {
-                                OreInStock = state.OreInStock + state.OreRobots - blueprint.OreRobotNeedsOre,
+                                OreInStock = state.OreInStock + state.OreRobots - blueprint.GeodeRobotNeedsOre,
                                 ClayInStock = state.ClayInStock + state.ClayRobots,
-                                ObsidianInStock = state.ObsidianInStock + state.ObsidianRobots,
-                                GeodeInStock = state.GeodeInStock + state.GeodeRobots,
-                                OreRobots = state.OreRobots + 1,
-                                ClayRobots = state.ClayRobots,
-                                ObsidianRobots = state.ObsidianRobots,
-                                GeodeRobots = state.GeodeRobots
-                            };
-                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.GeodeInStock > newState.AchievableGeodes(24-i)))
-                                nextStates.Add(newState);
-                        }
-                        else allRobotsPossible = false;
-
-                        if (state.OreInStock >= blueprint.ClayRobotNeedsOre)
-                        {
-                            var newState = new State()
-                            {
-                                OreInStock = state.OreInStock + state.OreRobots - blueprint.ClayRobotNeedsOre,
-                                ClayInStock = state.ClayInStock + state.ClayRobots,
-                                ObsidianInStock = state.ObsidianInStock + state.ObsidianRobots,
+                                ObsidianInStock = state.ObsidianInStock + state.ObsidianRobots - blueprint.GeodeRobotNeedsObsidian,
                                 GeodeInStock = state.GeodeInStock + state.GeodeRobots,
                                 OreRobots = state.OreRobots,
-                                ClayRobots = state.ClayRobots + 1,
+                                ClayRobots = state.ClayRobots,
                                 ObsidianRobots = state.ObsidianRobots,
-                                GeodeRobots = state.GeodeRobots
+                                GeodeRobots = state.GeodeRobots + 1
                             };
                             if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.GeodeInStock > newState.AchievableGeodes(24 - i)))
                                 nextStates.Add(newState);
@@ -100,23 +82,42 @@ namespace AdventOfCode22
                         }
                         else allRobotsPossible = false;
 
-                        if (state.OreInStock >= blueprint.GeodeRobotNeedsOre && state.ObsidianInStock >= blueprint.GeodeRobotNeedsObsidian)
+                        if (state.OreInStock >= blueprint.ClayRobotNeedsOre)
                         {
                             var newState = new State()
                             {
-                                OreInStock = state.OreInStock + state.OreRobots - blueprint.GeodeRobotNeedsOre,
+                                OreInStock = state.OreInStock + state.OreRobots - blueprint.ClayRobotNeedsOre,
                                 ClayInStock = state.ClayInStock + state.ClayRobots,
-                                ObsidianInStock = state.ObsidianInStock + state.ObsidianRobots - blueprint.GeodeRobotNeedsObsidian,
+                                ObsidianInStock = state.ObsidianInStock + state.ObsidianRobots,
                                 GeodeInStock = state.GeodeInStock + state.GeodeRobots,
                                 OreRobots = state.OreRobots,
-                                ClayRobots = state.ClayRobots,
+                                ClayRobots = state.ClayRobots + 1,
                                 ObsidianRobots = state.ObsidianRobots,
-                                GeodeRobots = state.GeodeRobots + 1
+                                GeodeRobots = state.GeodeRobots
                             };
                             if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.GeodeInStock > newState.AchievableGeodes(24 - i)))
                                 nextStates.Add(newState);
                         }
                         else allRobotsPossible = false;
+
+                        if (state.OreInStock >= blueprint.OreRobotNeedsOre)
+                        {
+                            var newState = new State()
+                            {
+                                OreInStock = state.OreInStock + state.OreRobots - blueprint.OreRobotNeedsOre,
+                                ClayInStock = state.ClayInStock + state.ClayRobots,
+                                ObsidianInStock = state.ObsidianInStock + state.ObsidianRobots,
+                                GeodeInStock = state.GeodeInStock + state.GeodeRobots,
+                                OreRobots = state.OreRobots + 1,
+                                ClayRobots = state.ClayRobots,
+                                ObsidianRobots = state.ObsidianRobots,
+                                GeodeRobots = state.GeodeRobots
+                            };
+                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.GeodeInStock > newState.AchievableGeodes(24-i)))
+                                nextStates.Add(newState);
+                        }
+                        else allRobotsPossible = false;
+
 
                         // No point in saving up if we can already do anything
                         if (!allRobotsPossible)
@@ -144,8 +145,10 @@ namespace AdventOfCode22
                 }
 
                 Console.WriteLine("Blueprint " + blueprint.Number + " makes " + initialStates.Max(x => x.GeodeInStock));
+                blueprint.QualityLevel = blueprint.Number * initialStates.Max(x => x.GeodeInStock);
             }
 
+            Console.WriteLine("--->" + blueprints.Sum(b => b.QualityLevel));
         }
 
         internal class Blueprint
@@ -158,7 +161,7 @@ namespace AdventOfCode22
             public int GeodeRobotNeedsOre;
             public int GeodeRobotNeedsObsidian;
 
-            public int MaxGeodesAvailable;
+            public int QualityLevel;
         }
 
         internal class State
