@@ -16,7 +16,12 @@ namespace AdventOfCode22
     {
         static void Main(string[] args)
         {
-            Day19.DoDay19();
+          //  Day19.DoDay19(24, 30);
+           // Day19.DoDay19(32, 3);
+           Day20.DoDay20();
+
+           Console.ReadLine();
+
         }
 
         

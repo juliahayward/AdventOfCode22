@@ -9,7 +9,7 @@ namespace AdventOfCode22
 {
     internal class Day19
     {
-        internal static void DoDay19()
+        internal static void DoDay19(int days, int blueprintCount)
         {
             var lines = new List<string>();
             using (var reader = new StreamReader(new FileStream(
@@ -37,11 +37,11 @@ namespace AdventOfCode22
                 });
             }
 
-            foreach (var blueprint in blueprints)
+            foreach (var blueprint in blueprints.Take(blueprintCount))
             {
                 List<State> initialStates = new List<State> {new State()};
                 List<State> nextStates = new List<State>();
-                for (int i = 1; i <= 24; i++)
+                for (int i = 1; i <= days; i++)
                 {
                     foreach (var state in initialStates)
                     {
@@ -59,7 +59,7 @@ namespace AdventOfCode22
                                 ObsidianRobots = state.ObsidianRobots,
                                 GeodeRobots = state.GeodeRobots + 1
                             };
-                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.GeodeInStock > newState.AchievableGeodes(24 - i)))
+                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.GeodeInStock > newState.AchievableGeodes(days - i)))
                                 nextStates.Add(newState);
                         }
                         else allRobotsPossible = false;
@@ -77,7 +77,7 @@ namespace AdventOfCode22
                                 ObsidianRobots = state.ObsidianRobots + 1,
                                 GeodeRobots = state.GeodeRobots
                             };
-                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.GeodeInStock > newState.AchievableGeodes(24 - i)))
+                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.MinimumGeodes(days - i) > newState.AchievableGeodes(days - i)))
                                 nextStates.Add(newState);
                         }
                         else allRobotsPossible = false;
@@ -95,7 +95,7 @@ namespace AdventOfCode22
                                 ObsidianRobots = state.ObsidianRobots,
                                 GeodeRobots = state.GeodeRobots
                             };
-                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.GeodeInStock > newState.AchievableGeodes(24 - i)))
+                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.MinimumGeodes(days - i) > newState.AchievableGeodes(days - i)))
                                 nextStates.Add(newState);
                         }
                         else allRobotsPossible = false;
@@ -113,7 +113,7 @@ namespace AdventOfCode22
                                 ObsidianRobots = state.ObsidianRobots,
                                 GeodeRobots = state.GeodeRobots
                             };
-                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.GeodeInStock > newState.AchievableGeodes(24-i)))
+                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.MinimumGeodes(days - i) > newState.AchievableGeodes(days - i)))
                                 nextStates.Add(newState);
                         }
                         else allRobotsPossible = false;
@@ -133,7 +133,7 @@ namespace AdventOfCode22
                                 ObsidianRobots = state.ObsidianRobots,
                                 GeodeRobots = state.GeodeRobots
                             };
-                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.GeodeInStock > newState.AchievableGeodes(24 - i)))
+                            if (!nextStates.Any(x => x.Dominates(newState)) && !nextStates.Any(x => x.MinimumGeodes(days-i) > newState.AchievableGeodes(days - i)))
                                 nextStates.Add(newState);
                         }
                     }
@@ -148,7 +148,7 @@ namespace AdventOfCode22
                 blueprint.QualityLevel = blueprint.Number * initialStates.Max(x => x.GeodeInStock);
             }
 
-            Console.WriteLine("--->" + blueprints.Sum(b => b.QualityLevel));
+            Console.WriteLine("Sum quality--->" + blueprints.Sum(b => b.QualityLevel));
         }
 
         internal class Blueprint
@@ -178,10 +178,17 @@ namespace AdventOfCode22
             public int AchievableGeodes(int minutesLeft)
             {
                 // Ones we already have, ones we can produce with existing robots, and ones possible if we only
-                // produce future robots
+                // produce future robots from here on
                 return GeodeInStock + (GeodeRobots * minutesLeft) +
                        Math.Max(0, (minutesLeft) * (minutesLeft - 1) / 2);
             }
+
+            public int MinimumGeodes(int minutesLeft)
+            {
+                // Ones we already have, ones we will produce with existing robots
+                return GeodeInStock + (GeodeRobots * minutesLeft);
+            }
+
 
             public bool Dominates(State other)
             {
