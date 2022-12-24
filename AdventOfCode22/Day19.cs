@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 
 namespace AdventOfCode22
 {
+    /*
+     *  //  Day19.DoDay19(24, 30);
+           // Day19.DoDay19(32, 3);
+     */
     internal class Day19
     {
         internal static void DoDay19(int days, int blueprintCount)

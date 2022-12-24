@@ -7,7 +7,7 @@
     <ProjectGuid>{2994149C-7E90-4B5F-83A6-09325E196166}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>AdventOfCode22</RootNamespace>
-    <AssemblyName>AdventOfCode2221a</AssemblyName>
+    <AssemblyName>AdventOfCode2223</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -79,6 +79,7 @@
     <Compile Include="Day13.cs" />
     <Compile Include="Day14.cs" />
     <Compile Include="Day15.cs" />
+    <Compile Include="Day16 - Copy.cs" />
     <Compile Include="Day16.cs" />
     <Compile Include="Day17.cs" />
     <Compile Include="Day18.cs" />
@@ -86,6 +87,9 @@
     <Compile Include="Day2.cs" />
     <Compile Include="Day20.cs" />
     <Compile Include="Day21.cs" />
+    <Compile Include="Day22.cs" />
+    <Compile Include="Day23.cs" />
+    <Compile Include="Day24.cs" />
     <Compile Include="Day3.cs" />
     <Compile Include="Day4.cs" />
     <Compile Include="Day5.cs" />
