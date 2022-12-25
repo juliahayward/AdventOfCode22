@@ -17,7 +17,7 @@ namespace AdventOfCode22
         static void Main(string[] args)
         {
             var start = DateTime.UtcNow;
-           Day16A.DoDay16();
+           Day25.DoDay25();
            Console.WriteLine((DateTime.UtcNow-start).TotalSeconds);
 
            Console.ReadLine();
